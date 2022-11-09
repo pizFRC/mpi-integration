@@ -28,63 +28,108 @@ int main(int argc,char* argv[]){
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);  
     MPI_Comm_size(MPI_COMM_WORLD, &nProc);    
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(myRank == MASTER){
+        start = MPI_Wtime();    
+    }
 
     	if(argc == 6){
 		n = atoi(argv[1]);
 		a = atof(argv[2]);
 		b = atof(argv[3]);
 		flagFunction = atoi(argv[4]); /*Note: you should include some functionality to switch between different functions*/
-        integrationMethod=atof(argv[5]);
+    integrationMethod=atof(argv[5]);
+    }else{
+        n=1024;
+        a=0;
+        b=3;
+        flagFunction=4;
+        integrationMethod=0;
     }
- 
+    
     //same value for both algorithem
     h = (b-a)/n; 
    
 	double local_n= n/nProc; //this is or number of trap or number of subintervals for each process
 
     if(myRank == MASTER){
-        printf("size:%i\n",argc );
-        printf("n:%f a:%f b:%f method : %i\n",n,a,b,integrationMethod);
         
+        printf("n: %f a:%f b:%f method : ",n,a,b);
+
+            if(integrationMethod==0){
+                printf("Trapezoid Methods ");
+            }
+            else{
+                  printf("SIMPSON Methods ");
+            }
             
+            switch (flagFunction)
+            {
+            case 0:
+                printf(" ,Function: SIN\n");
+                 break;
+            case 1:
+                  printf(", Function: COS\n");
+            break;   
+            case 2:
+                    printf(", Function: TAN\n");
+            break;
+            case 3:
+                   printf(", Function: 1/X\n");
+            break;   
+            case 4:
+                  printf(" ,Function: X^2\n");
+            
+            break;
+            case 5:
+                  printf(" , Function:  1+X/(X+2.5)");
+                  break;
+
+             case 6:
+                  printf(" , Function:  15 * cos(x)*sin(x) * sqrt(2*x) * 3.1459 * 7;");
+                  break;
+
+             case 7:
+                  printf(" , Function:  pow( abs(x),(15 * cos(x)* sqrt(2*x) * 3.1459)) * sqrt(2*x);");
+                  break;
+            default:
+                   printf(" ,Function: COS\n");
+            break;
+            }
             
            
                 
            }
 
-    
+    double local_a;
 
   
     if( integrationMethod == 0){  //TRAPEZOIDS RULE
       //here set the start and end of integration interval
       
         double intervallo=local_n *h;
-        double local_a= a + myRank * intervallo;
+        local_a= a + myRank * intervallo;
         double local_b=local_a + intervallo;
 
         integral = Trapezoids(local_a,local_b,local_n,h);
         //here call the integration method 
      
     }else{ //SIMPSON RULE
-       double  local_a = a+myRank* ((b-a)/nProc);	
+        local_a = a+myRank*(b-a)/nProc;	
        integral = Simpson(local_a,local_n,h);
     }
 
     
 
     
-    MPI_Reduce(&integral, &total, 1, MPI_DOUBLE, MPI_SUM, 0 , MPI_COMM_WORLD);
+    MPI_Reduce(&integral, &total, 1, MPI_DOUBLE, MPI_SUM, MASTER , MPI_COMM_WORLD);
 
 
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(myRank == MASTER){
-         start = MPI_Wtime();
-        
-    }
+    
    
 
-    printf("processo : %d \n",myRank);
+  
 
        
    
@@ -92,7 +137,7 @@ int main(int argc,char* argv[]){
 
 
 
-    
+    MPI_Barrier(MPI_COMM_WORLD);
     if(myRank == MASTER){
         end = MPI_Wtime();
         printf("\ntotal: %f \n",total); 
@@ -133,6 +178,14 @@ double chosenFunction(double x){
       return_val = x*x;
       
       break;
+     case 5:
+           return_val = (1+x)/(x+2.5);
+      break;
+        case 6:
+           return_val =   15 * cos(x)*sin(x) * sqrt(2*x) * 3.1459 * 7 * 20 * tan(x);
+      break;
+    
+    
     default:
       return_val = cos(x);
       break;
@@ -176,7 +229,7 @@ double Trapezoids(double local_a,double local_b,double local_n,double h ){
     }
 
     integral=integral *h ;
-    printf("integrale %f",integral);
+   
     return integral;
 }
 
