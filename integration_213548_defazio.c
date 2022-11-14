@@ -5,13 +5,16 @@
 #include "stdlib.h"
 #include "math.h"
 int flagFunction=0;
+ int nProc;
 double Trapezoids(double,double,double,double);
-double Simpson(double ,double  ,double );
+double Simpson(double ,int  ,double );
+double simpson(double , double , int );
+
 int main(int argc,char* argv[]){
 
     //variable declaration
     int myRank;//rank del processo
-    int nProc;//num of process
+   //num of process
     int MASTER=0;
     int messageTag=0;
     double h;  //base width of segmet or trapezoid
@@ -50,7 +53,7 @@ int main(int argc,char* argv[]){
     //same value for both algorithem
     h = (b-a)/n; 
    
-	double local_n= n/nProc; //this is or number of trap or number of subintervals for each process
+	int local_n= n/nProc; //this is or number of trap or number of subintervals for each process
 
     if(myRank == MASTER){
         
@@ -66,34 +69,17 @@ int main(int argc,char* argv[]){
             switch (flagFunction)
             {
             case 0:
-                printf(" ,Function: SIN\n");
+                printf(" ,-(x*x) -(2*x)+ 8\n");
                  break;
             case 1:
-                  printf(", Function: COS\n");
+                  printf(", (pow(x,3)*sin(x))\n");
             break;   
             case 2:
-                    printf(", Function: TAN\n");
+                    printf(",(pow(x,2)+ 3*x)*sin(x)\n");
             break;
-            case 3:
-                   printf(", Function: 1/X\n");
-            break;   
-            case 4:
-                  printf(" ,Function: X^2\n");
             
-            break;
-            case 5:
-                  printf(" , Function:  1+X/(X+2.5)");
-                  break;
-
-             case 6:
-                  printf(" , Function:  15 * cos(x)*sin(x) * sqrt(2*x) * 3.1459 * 7;");
-                  break;
-
-             case 7:
-                  printf(" , Function:  pow( abs(x),(15 * cos(x)* sqrt(2*x) * 3.1459)) * sqrt(2*x);");
-                  break;
             default:
-                   printf(" ,Function: COS\n");
+                   printf(" ,Function: x^2\n");
             break;
             }
             
@@ -115,8 +101,9 @@ int main(int argc,char* argv[]){
         //here call the integration method 
      
     }else{ //SIMPSON RULE
-        local_a = a+myRank*(b-a)/nProc;	
-       integral = Simpson(local_a,local_n,h);
+        local_a = a+ myRank* (b-a)/nProc;	
+       // integral=simpson(local_a,h,local_n);
+     integral = Simpson(local_a,local_n,h);
     }
 
     
@@ -162,32 +149,25 @@ double chosenFunction(double x){
    
 	switch (flagFunction) 
 	{
-    case 0:
-      return_val = sin(x);
+      case 0:
+           return_val = x*x;
       break;
-    case 1:
-      return_val = cos(x);
-      break;   
-    case 2:
-      return_val = tan(x);
+        
+       case 1:
+           
+           
+           return_val = -(x*x) -(2*x)+ 8;
       break;
-    case 3:
-      return_val = 1/x;
-      break;   
-    case 4:
-      return_val = x*x;
-      
+      case 2:
+      return_val= (pow(x,3)*sin(x))  ;
       break;
-     case 5:
-           return_val = (1+x)/(x+2.5);
-      break;
-        case 6:
-           return_val =   15 * cos(x)*sin(x) * sqrt(2*x) * 3.1459 * 7 * 20 * tan(x);
+      case 3:
+      return_val= (pow(x,2)+ 3*x)*sin(x) ;
       break;
     
     
     default:
-      return_val = cos(x);
+      return_val = x*x;
       break;
   }
 	/*Add your functions here, should be able to switch functions depending on the user's flag passed in*/
@@ -195,23 +175,47 @@ double chosenFunction(double x){
 }
 
 
-double Simpson(double local_a, double local_n, double h){
+double Simpson(double local_a, int n, double h){
 	/*Write your code here to do the integration*/
+  double height=h;
 	double result = 0;
-	for(int i =0; i<=local_n; i++)
+	for(int i =0; i<=(n); i++)
 	{
 		// if i is 0 or n, only add f(x_i)
-		if((i==0)||(i==local_n))
-			result += chosenFunction(local_a + i* h);
+		if((i==0)||(i==n))
+			result += chosenFunction(local_a + i* height);
 		else if(i%2==0)
 			// then if i is even, add 2*f(x_i)
-			result += 2* chosenFunction(local_a + i*h);
+			result += 2* chosenFunction(local_a + i*height);
 		else
 			// else if i is odd, add 4*f(x_i)
-			result += 4* chosenFunction(local_a + i*h);	
+			result += 4* chosenFunction(local_a + i*height);	
 	}
-	result *= h/3;  // multiply the above series by h/3
+	result *= (height/3);  // multiply the above series by h/3
 	return(result);
+
+}
+
+
+double simpson(double a, double h, int n)
+{
+	double x[n+1], sum = 0;
+	int j;
+	
+	
+	x[0] = a;
+	
+	for(j=1; j<=n; j++)
+	{
+		x[j] = a + h*j;
+	}
+	
+	for(j=1; j<=n/2; j++)
+	{
+		sum += chosenFunction(x[2*j - 2]) + 4*chosenFunction(x[2*j - 1]) + chosenFunction(x[2*j]);
+	}
+	
+	return sum*h/3;
 }
 
 double Trapezoids(double local_a,double local_b,double local_n,double h ){
@@ -232,4 +236,5 @@ double Trapezoids(double local_a,double local_b,double local_n,double h ){
    
     return integral;
 }
+
 
